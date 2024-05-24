@@ -1,15 +1,12 @@
 import torch
 from torch import nn
 
-
 def create_linear_regression_model(input_size, output_size):
     """
     Create a linear regression model with the given input and output sizes.
-    Hint: use nn.Linear
     """
     model = nn.Linear(input_size, output_size)
     return model
-
 
 def train_iteration(X, y, model, loss_fn, optimizer):
     # Compute prediction and loss
@@ -22,31 +19,45 @@ def train_iteration(X, y, model, loss_fn, optimizer):
     optimizer.step()
     return loss
 
-
-def fit_regression_model(X, y):
+def fit_regression_model(X, y, num_epochs=5000, learning_rate=0.01, tolerance=1e-5):
     """
     Train the model for the given number of epochs.
-    Hint: use the train_iteration function.
-    Hint 2: while woring you can use the print function to print the loss every 1000 epochs.
-    Hint 3: you can use the previos_loss variable to stop the training when the loss is not changing much.
     """
-    learning_rate = 0.01 # Pick a better learning rate
-    num_epochs = 100 # Pick a better number of epochs
-    input_features = 0 # extract the number of features from the input `shape` of X
-    output_features = 0 # extract the number of features from the output `shape` of y
+    input_features = X.shape[1]
+    output_features = y.shape[1]
     model = create_linear_regression_model(input_features, output_features)
     
-    loss_fn = nn.L1Loss() # Use mean squared error loss, like in class
-
+    loss_fn = nn.MSELoss()  # Use mean squared error loss
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
-    previos_loss = float("inf")
+    previous_loss = float("inf")
 
-    for epoch in range(1, num_epochs):
+    for epoch in range(1, num_epochs + 1):
         loss = train_iteration(X, y, model, loss_fn, optimizer)
-        if False: # Change this condition to stop the training when the loss is not changing much.
+        
+        # Print the loss every 1000 epochs
+        if epoch % 1000 == 0:
+            print(f"Epoch {epoch}, Loss: {loss.item()}")
+
+        # Stop training if the loss does not change significantly
+        if abs(previous_loss - loss.item()) < tolerance:
             break
-        previos_loss = loss.item()
-        # This is a good place to print the loss every 1000 epochs.
+
+        previous_loss = loss.item()
+
     return model, loss
 
+# Normalizing Data Function
+def normalize_data(X, y):
+    X_mean = X.mean(dim=0, keepdim=True)
+    X_std = X.std(dim=0, keepdim=True)
+    X = (X - X_mean) / X_std
+
+    y_mean = y.mean(dim=0, keepdim=True)
+    y_std = y.std(dim=0, keepdim=True)
+    y = (y - y_mean) / y_std
+
+    return X, y, X_mean, X_std, y_mean, y_std
+
+def denormalize_data(y, y_mean, y_std):
+    return y * y_std + y_mean
